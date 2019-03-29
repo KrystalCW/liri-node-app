@@ -77,7 +77,7 @@ function spotifyQuery() {
    var spotify = new Spotify(keys.spotify);
    results = [];
    var indices = [];
-   spotify.search({ type: "track", query: query, limit: 10 }, function(error, data) {
+   spotify.search({ type: 'track', query: query, limit: 20 }, function(error, data) {
        if(error) {
            console.log(error)
        } else {
@@ -109,7 +109,7 @@ function randomQuery() {
         if(error) {
             console.error.log(error)
         } else {
-            var newRandom = (String(data).split(","));
+            var newRandom = (String(data).split(", "));
             liriCommand = newRandom[0];
             query = newRandom[1];
             console.log(liriCommand, query);
