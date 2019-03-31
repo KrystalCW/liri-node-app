@@ -6,6 +6,11 @@ var Spotify = require('node-spotify-api');
 var moment = require('moment');
 var fs = require('fs');
 
+var Concert = require("./concert");
+var Song = require("./song.js");
+
+var blankLine = "\n---------------------------------------\n\n";
+
 
 var liriCommand = process.argv[2];
 var query = process.argv[3];
@@ -42,65 +47,60 @@ function omdbQuery() {
     var omdbqueryURL= "http://www.omdbapi.com/?t=" + query + "&y=&plot=short&apikey=trilogy";
     axios.get(omdbqueryURL).then(
         function(response) {
-            var data = response.data;
-            console.log("Movie name: "+ query + "\n"
-                + "Year movie came out: " + data.Year + "\n"
-                + "imdb Rating: " + data.imdbRating  + "\n"
-                + "Country: " + data.Country + "\n"
-                + "Language: " + data.Language + "\n"
-                + "Plot: " + data.Plot + "\n"
-                + "Actors: " + data.Actors);
+            const data = response.data;
+            let movieInfo = [
+                "Movie name: " + data.Title,
+                "Year movie came out: " + data.Year,
+                "imdb Rating: " + data.imdbRating,
+                "Country: " + data.Country, 
+                "Language: " + data.Language,
+                "Plot: " + data.Plot,
+                "Actors: " + data.Actors,
+            ].join("\n\n");
+            fs.appendFile("log.txt", movieInfo + blankLine, function(err) {
+                if (err) throw err;
+                console.log(movieInfo);
+            })
         }
     )
 }
 
 function bandsintownQuery() {
     var bandsintownqueryURL = "https://rest.bandsintown.com/artists/" + query + "/events?app_id=codingbootcamp";
-    console.log(query);
     console.log(bandsintownqueryURL);
     axios.get(bandsintownqueryURL).then(
         function(response) {
-            var data = response.data;
-            results = [];
-            data.forEach(function(response) {
-                results.push({name: response.venue.name,
-                location: response.venue.city + ", " + response.venue.country,
-                dateOfEvent: moment(response.datetime).format("LLL"),
-                })
+            var something = response.data;
+            something.forEach(function(res) {
+                let correctDate = moment(res.datetime).format("MM/DD/YYYY");
+                let newConcert = new Concert(`${res.venue.name}`, `${res.venue.city}`, `${res.venue.country}`, `${correctDate}`);
+                newConcert.printConcert();
             })
-            console.log(results);
-            }
-    )
+        })
 }
 
 function spotifyQuery() {
    var spotify = new Spotify(keys.spotify);
-   results = [];
-   var indices = [];
-   spotify.search({ type: 'track', query: query, limit: 20 }, function(error, data) {
+   spotify.search({ type: 'track', query: query, limit: 10 }, function(error, data) {
        if(error) {
            console.log(error)
        } else {
             data.tracks.items.forEach(function(response) {
-                results.push({artist: response.artists[0].name,
-                song: response.name,
-                preview: response.external_urls.spotify,
-                album: response.album.name});
+                var newSong = new Song(`${response.artists[0].name}`, `${response.name}`, `${response.external_urls.spotify}`, `${response.album.name}`);
+                results.push(newSong);
+                if (query !== "the+sign") {
+                    newSong.printSong();
+                } else if (query === "the+sign") {
+                    searchResults();
+                }
+
+                function searchResults() {
+                    if (newSong.artist === "Ace of Base") {
+                        newSong.printSong();
+                    }                  
+                }
             });
        }
-       if (query !== "the+sign") {
-           console.log(results)
-       } else if (query === "the+sign") {
-           searchResults();
-       }
-       function searchResults() {
-        for (var i = 0; i < results.length; i++) {
-            var index = (results[i].artist).indexOf("Ace of Base");
-            indices.push(index);
-         }
-        }
-        var thisIsTheOne = indices.indexOf(0);
-        console.log(results[thisIsTheOne]);
    })
 }
 
